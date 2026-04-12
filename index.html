@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Amazon AU v15</title>
+<style>
+*{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+body{max-width:820px;margin:0 auto;padding:14px;background:#f5f5f7;color:#1d1d1f}
+h1{font-size:20px;margin:6px 0 12px}
+h2{font-size:12px;text-transform:uppercase;color:#666;margin:14px 0 8px;letter-spacing:.5px}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+label{display:block;font-size:12px;margin:6px 0 3px;color:#333}
+input{width:100%;padding:9px;border:1px solid #d2d2d7;border-radius:8px;font-size:15px;background:#fafafa}
+input:focus{outline:none;border-color:#0071e3;background:#fff}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+
+details{background:#fff;border-radius:12px;padding:10px 14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+details summary{cursor:pointer;font-size:12px;text-transform:uppercase;color:#0071e3;font-weight:600;letter-spacing:.5px;padding:4px 0}
+details[open] summary{margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:8px}
+
+.scen-block{background:#fff;border-radius:12px;padding:12px 10px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.scen-block.disabled{opacity:0.5}
+.scen-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:4px}
+.scen-name{font-size:13px;font-weight:700}
+.scen-cost{font-size:11px;color:#444}
+.scen-prices{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.pcell{background:#1d1d1f;color:#fff;border-radius:6px;padding:7px 2px;text-align:center;min-width:0}
+.pcell.custom{background:#0071e3}
+.pcell.target{background:#e67300}
+.pcell .pct{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.2px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcell.custom .pct{color:#e6f0ff}
+.pcell.target .pct{color:#fff3e0}
+.pcell .price{font-size:14px;font-weight:700;margin:3px 0 1px;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcell .net{font-size:9px;color:#bbb;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcell.custom .net{color:#e6f0ff}
+.pcell.target .net{color:#fff}
+.pcell .pft{font-size:9px;color:#4ade80;margin-top:2px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcell.custom .pft{color:#fff}
+.pcell.target .pft{color:#fff}
+
+.error{color:#ff453a;font-size:12px}
+.todo{font-size:11px;color:#888;font-style:italic}
+
+/* Pantallas anchas: celdas más grandes */
+@media (min-width: 520px){
+  .scen-prices{gap:6px}
+  .pcell{padding:10px 5px;border-radius:8px}
+  .pcell .pct{font-size:10px}
+  .pcell .price{font-size:17px}
+  .pcell .net{font-size:10px;line-height:1.3}
+  .pcell .pft{font-size:11px}
+  .scen-name{font-size:14px}
+  .scen-cost{font-size:12px}
+  .scen-block{padding:14px}
+}
+
+/* Pantallas muy estrechas: permitir elipsis con tooltip */
+@media (max-width: 380px){
+  body{padding:10px}
+  .pcell{padding:6px 1px}
+  .pcell .price{font-size:13px}
+}
+</style>
+</head>
+<body>
+<h1>📦 Calculadora Amazon AU v15</h1>
+
+<div class="card">
+<h2>Producto (paquete individual)</h2>
+<div class="row">
+<div><label>Largo cm</label><input type="number" id="L" placeholder="20" oninput="calc()"></div>
+<div><label>Ancho cm</label><input type="number" id="A" placeholder="15" oninput="calc()"></div>
+<div><label>Alto cm</label><input type="number" id="H" placeholder="10" oninput="calc()"></div>
+</div>
+<div class="row2">
+<div><label>Peso (kg)</label><input type="number" id="peso" step="0.01" placeholder="0.5" oninput="calc()"></div>
+<div><label>Coste FOB (USD)</label><input type="number" id="costoProd" step="0.01" placeholder="3" oninput="calc()"></div>
+</div>
+<div class="row2">
+<div><label>Margen custom (%)</label><input type="number" id="margenCustom" value="25" step="1" oninput="calc()"></div>
+<div><label>Target PVP (A$ con GST)</label><input type="number" id="targetPrice" step="0.5" placeholder="0" oninput="calc()"></div>
+</div>
+</div>
+
+<details>
+<summary>⚙️ Ajustes avanzados (los rellenas una vez)</summary>
+
+<h2>Importación</h2>
+<div class="row2">
+<div><label>Aduana USD/u</label><input type="number" id="aranceles" value="0.5" step="0.01" oninput="calc()"></div>
+<div><label>FX USD→AUD</label><input type="number" id="fx" value="1.45" step="0.001" oninput="calc()"></div>
+</div>
+<div class="row"><div><label>Contenedor AUD</label><input type="number" id="contCost" value="5000" oninput="calc()"></div>
+<div><label>Capacidad m³</label><input type="number" id="contCBM" value="67" oninput="calc()"></div>
+<div><label>Error envío %</label><input type="number" id="errEnvio" value="10" step="1" oninput="calc()"></div></div>
+
+<h2>3PL Inbound (USD)</h2>
+<div class="row2"><div><label>Por unidad</label><input type="number" id="inUnit" value="0.15" step="0.01" oninput="calc()"></div>
+<div><label>Por kg</label><input type="number" id="inKg" value="0.15" step="0.01" oninput="calc()"></div></div>
+
+<h2>3PL → Amazon (AUD, solo FBA y Easy Ship)</h2>
+<div><label>Coste fijo por unidad</label><input type="number" id="outFixed" value="1" step="0.1" oninput="calc()"></div>
+
+<h2>Easy Ship — mix de zonas (%)</h2>
+<div class="row"><div><label>Zona A</label><input type="number" id="zA" value="50" step="1" oninput="calc()"></div>
+<div><label>Zona B</label><input type="number" id="zB" value="30" step="1" oninput="calc()"></div>
+<div><label>Zona C</label><input type="number" id="zC" value="20" step="1" oninput="calc()"></div></div>
+
+<h2>Direct to FBA</h2>
+<div class="row2">
+<div><label>Shipping AUD/kg</label><input type="number" id="d2fbaShip" value="2" step="0.1" oninput="calc()"></div>
+<div><label>Envío interno AUD</label><input type="number" id="d2fbaInt" value="0.5" step="0.1" oninput="calc()"></div>
+</div>
+
+<h2>ECOF only</h2>
+<div class="row2">
+<div><label>% Aramex covers</label><input type="number" id="aramexCov" value="80" step="1" oninput="calc()"></div>
+<div><label>Error envío %</label><input type="number" id="ecofErr" value="5" step="0.5" oninput="calc()"></div>
+</div>
+
+<h2>Amazon AU (% sobre PVP con GST)</h2>
+<div class="row2"><div><label>GST</label><input type="number" id="gst" value="10" step="0.1" oninput="calc()"></div>
+<div></div></div>
+<div class="row4">
+<div><label>Refund</label><input type="number" id="refundPct" value="3" step="0.1" oninput="calc()"></div>
+<div><label>Ads</label><input type="number" id="adsPct" value="6" step="0.1" oninput="calc()"></div>
+<div><label>Error</label><input type="number" id="errPct" value="2" step="0.1" oninput="calc()"></div>
+<div><label>Comisión</label><input type="number" id="comision" value="15" step="0.1" oninput="calc()"></div>
+</div>
+<div class="row2">
+<div><label>Sto FBA %</label><input type="number" id="stoFba" value="2.5" step="0.1" oninput="calc()"></div>
+<div><label>Sto 3PL %</label><input type="number" id="sto3pl" value="1.5" step="0.1" oninput="calc()"></div>
+</div>
+
+</details>
+
+<div id="result"></div>
+
+<script>
+// === Tabla FBA AU (≥$13) ===
+const TIERS = [
+  {name:'Small env',L:20,A:15,H:1,maxG:75,bands:[[75,4.55]]},
+  {name:'Std env',L:33,A:23,H:2.5,maxG:475,bands:[[75,4.58],[225,5.26],[475,5.61]]},
+  {name:'Large env',L:33,A:23,H:5,maxG:975,bands:[[225,6.78],[475,7.02],[975,8.29]]},
+  {name:'Parcel',L:45,A:34,H:20,maxG:12000,useDimWeight:true,bands:[
+    [250,7.34],[500,7.64],[1000,9.22],[1500,9.68],[2000,9.81],[3000,9.86],
+    [4000,10.18],[5000,10.19],[6000,11.10],[7000,11.26],[8000,11.26],
+    [9000,11.27],[10000,11.27],[11000,13.80],[12000,13.93]]},
+  {name:'Small OS',L:61,A:46,H:46,maxG:999999,maxRealG:2000,useDimWeight:true,bands:[
+    [1000,9.94],[1250,10.41],[1500,10.65],[1750,10.66],[2000,10.66]],
+    over:{base:11.43,threshold:2000,perKg:0.01}},
+  {name:'Std OS',L:105,A:60,H:60,maxG:999999,maxRealG:22000,useDimWeight:true,bands:[
+    [1000,12.30],[2000,12.95],[3000,13.04],[4000,13.18],[5000,13.41],
+    [6000,14.31],[7000,14.46],[8000,14.48],[9000,14.52],[10000,14.52],
+    [15000,15.86],[20000,16.42],[22000,16.42]],
+    over:{base:19.39,threshold:22000,perKg:0.01}},
+  {name:'Large OS',L:9999,A:9999,H:9999,maxG:999999,maxRealG:35000,useDimWeight:true,bands:[
+    [5000,17.80],[10000,19.35],[15000,21.15],[20000,21.48],
+    [25000,22.52],[30000,26.88],[35000,26.91]],
+    over:{base:38.59,threshold:35000,perKg:0.10}},
+  {name:'XL',L:9999,A:9999,H:9999,maxG:250000,maxRealG:250000,useDimWeight:true,bands:[[35000,90.00]],
+    over:{base:90.00,threshold:35000,perKg:0.10}}
+];
+function fitsTier(t,L,A,H){const d=[L,A,H].sort((a,b)=>b-a);const td=[t.L,t.A,t.H].sort((a,b)=>b-a);return d[0]<=td[0]&&d[1]<=td[1]&&d[2]<=td[2];}
+function getFBA(L,A,H,pesoG){
+  for(const t of TIERS){
+    // Si el peso real supera el max del tier, saltar al siguiente (regla oficial Amazon)
+    if(t.maxRealG && pesoG>t.maxRealG) continue;
+    if(t.name==='Large OS' || t.name==='XL'){
+      if(t.name==='Large OS' && pesoG>35000) continue;
+      if(t.name==='XL' && pesoG<=35000) continue;
+    } else {
+      if(!fitsTier(t,L,A,H)) continue;
+    }
+    let wG=pesoG;
+    if(t.useDimWeight) wG=Math.max(pesoG,(L*A*H)/5);
+    if(wG>t.maxG && !t.over) continue;
+    for(const b of t.bands) if(wG<=b[0]) return {fee:b[1],tier:t.name,wG};
+    if(t.over){const ex=Math.max(0,(wG-t.over.threshold)/1000)*t.over.perKg;return {fee:t.over.base+ex,tier:t.name,wG};}
+  }
+  return null;
+}
+
+const EASY=[[0.5,3.81,4.67,6.03],[1,4.85,6.47,7.68],[3,4.85,6.47,7.68],[5,5.33,7.47,9.56],
+  [10,6.23,9.88,12.20],[15,6.44,13.81,16.52],[20,6.44,16.69,20.84],[25,6.50,16.69,23.43]];
+function getEasyShip(L,A,H,pesoKg,mA,mB,mC){
+  const dimKg=(L*A*H)/4000;
+  const wKg=Math.max(pesoKg,dimKg);
+  if(wKg>25) return null;
+  let row=null;
+  for(const r of EASY){if(wKg<=r[0]){row=r;break;}}
+  if(!row) return null;
+  return {fee:row[1]*mA+row[2]*mB+row[3]*mC,wKg};
+}
+
+// === ECOF shipping ===
+// AUPOST: 9 zonas, bandas ≤250g/500g/1kg/3kg/5kg, y >5kg: basic + perkg*pesoKg
+const AUPOST={
+  'SSL':[5.32,5.73,5.86,5.91,6.41,4.98,0.33],
+  'SSM':[7.06,8.03,8.09,8.38,9.36,7.25,0.66],
+  'SSR':[11.81,13.06,15.23,18.00,21.74,14.32,2.16],
+  'NSC':[6.56,7.01,7.52,7.97,9.78,6.86,0.90],
+  'NSM':[7.89,8.74,9.76,11.12,13.52,8.11,1.25],
+  'NSR':[12.87,13.76,19.45,24.20,29.81,17.10,2.90],
+  'DSC':[8.25,9.24,11.45,14.21,18.05,9.84,1.95],
+  'DSM':[10.19,10.25,13.25,15.68,20.68,10.26,2.59],
+  'DSR':[13.66,14.15,23.56,29.45,38.57,18.43,5.25]
+};
+// Aramex Australia Wide: ≤500g, 1kg, 2kg, 3kg, 4kg, 5kg, 10kg, 20kg
+const ARAMEX=[[0.5,7.07],[1,7.71],[2,8.48],[3,9.41],[4,10.99],[5,11.78],[10,15.37],[20,21.19]];
+// Oversize promedios por zona (del xlsx) — [st_b, st_kg, st_min, ae_b, ae_kg, ae_min, ae_cov]
+const OVS={
+  'SSL':[16.90,0.47,24.00,11.77,0.27,15.97,0.71],
+  'SSM':[16.95,0.66,26.86,14.78,0.53,18.93,0.99],
+  'SSR':[16.98,0.84,29.65,19.47,0.94,24.48,1.00],
+  'NSC':[16.95,0.74,28.00,12.84,0.51,14.97,0.94],
+  'NSM':[18.78,1.11,35.43,17.39,1.02,24.36,0.99],
+  'NSR':[21.56,1.70,46.09,23.57,1.48,32.13,1.00],
+  'DSC':[17.89,2.17,50.46,13.72,1.56,17.17,0.77],
+  'DSM':[22.83,2.67,62.90,29.80,2.04,46.61,0.92],
+  'DSR':[27.96,3.67,76.03,48.12,5.01,81.24,0.99]
+};
+function aupostFee(zone,wKg){
+  const r=AUPOST[zone]; const g=wKg*1000;
+  if(g<=250) return r[0];
+  if(g<=500) return r[1];
+  if(g<=1000) return r[2];
+  if(g<=3000) return r[3];
+  if(g<=5000) return r[4];
+  return r[5]+r[6]*wKg;
+}
+function aramexFee(wKg){
+  for(const [maxKg,fee] of ARAMEX) if(wKg<=maxKg) return fee;
+  return null;
+}
+function oversizeFee(zone,wKg){
+  const o=OVS[zone];
+  const st = Math.max(o[0]+o[1]*wKg, o[2]);
+  const ae = Math.max(o[3]+o[4]*wKg, o[5]);
+  const cov = o[6];
+  return cov*ae + (1-cov)*st;
+}
+function calcECOF(L,A,H,pesoKg,zoneMix,aramexCov,surcharge,fuelNormal,fuelOver){
+  // Peso facturable ECOF: max(real, cbm*250)
+  const cbm=(L*A*H)/1000000;
+  const wVol=cbm*250;
+  const wKg=Math.max(pesoKg,wVol);
+  const maxDim=Math.max(L,A,H);
+  // Segmentación
+  const isLarge = maxDim>120 || wKg>22;
+  const isMedium = !isLarge && (maxDim>100 || wKg>20);
+  const isSmall = !isLarge && !isMedium;
+  let fee=0, segment='';
+  if(isSmall){
+    // 80% Aramex + 20% AUPOST, ambos con fuel +10%
+    const aFee = aramexFee(wKg);
+    let aupBlend=0;
+    for(const [z,w] of zoneMix) aupBlend += aupostFee(z,wKg)*w;
+    const aramex = aFee!==null ? aFee*(1+fuelNormal) : aupBlend*(1+fuelNormal);
+    const aupost = aupBlend*(1+fuelNormal);
+    fee = aramexCov*aramex + (1-aramexCov)*aupost;
+    segment='Small';
+  } else if(isMedium){
+    // Si cabe Aramex (wKg<=20): aramex + $15 surcharge; si no: oversize blend
+    if(wKg<=20){
+      const aFee = aramexFee(wKg);
+      const aramex = aFee!==null ? (aFee+surcharge)*(1+fuelNormal) : null;
+      let ovs=0;
+      for(const [z,w] of zoneMix) ovs += oversizeFee(z,wKg)*w;
+      ovs = ovs*(1+fuelOver);
+      fee = aramex!==null ? (aramexCov*aramex + (1-aramexCov)*ovs) : ovs;
+      segment='Medium (Aramex+$'+surcharge+')';
+    } else {
+      let ovs=0;
+      for(const [z,w] of zoneMix) ovs += oversizeFee(z,wKg)*w;
+      fee = ovs*(1+fuelOver);
+      segment='Medium (Oversize)';
+    }
+  } else {
+    let ovs=0;
+    for(const [z,w] of zoneMix) ovs += oversizeFee(z,wKg)*w;
+    fee = ovs*(1+fuelOver);
+    segment='Large (Oversize)';
+  }
+  return {fee, wKg, segment};
+}
+
+function calc(){
+  const L=+document.getElementById('L').value;
+  const A=+document.getElementById('A').value;
+  const H=+document.getElementById('H').value;
+  const pesoKg=+document.getElementById('peso').value;
+  const costFobUSD=+document.getElementById('costoProd').value;
+  // Si faltan datos clave, no calcular nada
+  if(!L || !A || !H || !pesoKg || !costFobUSD){
+    document.getElementById('result').innerHTML='<div class="card" style="text-align:center;color:#888;padding:40px 16px"><div style="font-size:15px;margin-bottom:8px">📏 Rellena dimensiones, peso y coste FOB</div><div style="font-size:12px">para ver los precios de cada escenario</div></div>';
+    return;
+  }
+  const pesoG=pesoKg*1000;
+  const cbm=(L*A*H)/1000000;
+  const fx=+document.getElementById('fx').value;
+  const costProdAUD=(+document.getElementById('costoProd').value+ +document.getElementById('aranceles').value)*fx;
+  const contCost=+document.getElementById('contCost').value;
+  const contCBM=+document.getElementById('contCBM').value;
+  const errEnvio=+document.getElementById('errEnvio').value/100;
+  const envioCNAU=(contCost/contCBM)*cbm*(1+errEnvio);
+  const inAUD=(+document.getElementById('inUnit').value + +document.getElementById('inKg').value*pesoKg)*fx;
+  const outAUD=+document.getElementById('outFixed').value; // A$1 fijo, ya en AUD
+
+  const comision=+document.getElementById('comision').value/100;
+  const refundPct=+document.getElementById('refundPct').value/100;
+  const adsPct=+document.getElementById('adsPct').value/100;
+  const errPct=+document.getElementById('errPct').value/100;
+  const stoFba=+document.getElementById('stoFba').value/100;
+  const sto3pl=+document.getElementById('sto3pl').value/100;
+  const gst=+document.getElementById('gst').value/100;
+  const margenCustom=+document.getElementById('margenCustom').value/100;
+  const targetPrice=+document.getElementById('targetPrice').value;
+
+  const baseECOF = costProdAUD + envioCNAU + inAUD + outAUD;
+
+  // FBA
+  const fba = getFBA(L,A,H,pesoG);
+
+  // Easy Ship
+  const mA=+document.getElementById('zA').value/100;
+  const mB=+document.getElementById('zB').value/100;
+  const mC=+document.getElementById('zC').value/100;
+  const mixOk=Math.abs(mA+mB+mC-1)<0.01;
+  const easy = mixOk ? getEasyShip(L,A,H,pesoKg,mA,mB,mC) : null;
+
+  // Todos los % van sobre PVP con GST. Cada escenario define sus propios % variables.
+  function pctEff(sto, useAds){
+    const ads = useAds ? adsPct : 0;
+    return (comision + sto + refundPct + ads + errPct) * (1+gst);
+  }
+  function priceFor(fixedCost, sto, margen, useAds){
+    const denom = 1 - pctEff(sto, useAds!==false) - margen;
+    if(denom<=0) return null;
+    const pNet = fixedCost/denom;
+    return {pNet, pGst:pNet*(1+gst), beneficio:pNet*margen};
+  }
+
+  const margenes=[
+    {label:'10%',val:0.10,custom:false},
+    {label:'20%',val:0.20,custom:false},
+    {label:'30%',val:0.30,custom:false},
+    {label:(margenCustom*100).toFixed(0)+'%',val:margenCustom,custom:true}
+  ];
+
+  function renderBlock(name,cost,sto,err,useAds,shipFee,baseFee){
+    let html=`<div class="scen-block${err?' disabled':''}">
+      <div class="scen-head">
+        <div class="scen-name">${name}</div>
+        <div class="scen-cost">${err?'':'<b>A$ '+cost.toFixed(2)+'</b>'+(shipFee!==undefined?' <span style="color:#888">= '+baseFee.toFixed(2)+' + '+shipFee.toFixed(2)+' envío</span>':'')}</div>
+      </div>`;
+    if(err){ html+=`<div class="error">${err}</div></div>`; return html; }
+    html+='<div class="scen-prices">';
+    for(const m of margenes){
+      const r=priceFor(cost,sto,m.val,useAds);
+      if(!r){html+=`<div class="pcell ${m.custom?'custom':''}"><div class="pct">${m.label}</div><div class="price">—</div></div>`;}
+      else{html+=`<div class="pcell ${m.custom?'custom':''}">
+        <div class="pct">${m.label}</div>
+        <div class="price">A$${r.pGst.toFixed(2)}</div>
+        <div class="net">${r.pNet.toFixed(2)} neto</div>
+        <div class="pft">+${r.beneficio.toFixed(2)}</div>
+      </div>`;}
+    }
+    // Celda target: dado targetPrice (con GST), calcular margen real
+    if(targetPrice>0){
+      const pNet = targetPrice/(1+gst);
+      const pctE = pctEff(sto, useAds!==false);
+      const margenReal = 1 - pctE - cost/pNet;
+      const benef = pNet*margenReal;
+      // Si margen negativo, fondo rojo oscuro. Si positivo, naranja normal.
+      const bgStyle = margenReal<0 ? ' style="background:#b91c1c"' : '';
+      html+=`<div class="pcell target"${bgStyle}>
+        <div class="pct">Target</div>
+        <div class="price">A$${targetPrice.toFixed(2)}</div>
+        <div class="net"><b style="color:#fff">${(margenReal*100).toFixed(1)}%</b></div>
+        <div class="pft">${benef>=0?'+':''}${benef.toFixed(2)}</div>
+      </div>`;
+    } else {
+      html+=`<div class="pcell target" style="opacity:0.35"><div class="pct">Target</div><div class="price">—</div><div class="net">pon PVP</div></div>`;
+    }
+    html+='</div></div>';
+    return html;
+  }
+
+  let html='';
+  // ECOF + FBA: solo Sto FBA 2.5%, CON ads
+  if(fba) html+=renderBlock('ECOF + FBA <span style="color:#888;font-weight:400;font-size:11px">· '+fba.tier+'</span>', baseECOF+fba.fee, stoFba, null, true, fba.fee, baseECOF);
+  else html+=renderBlock('ECOF + FBA',0,stoFba,'⚠️ Fuera de tiers FBA',true);
+  // ECOF + Easy Ship: Sto 3PL 1.5%, CON ads
+  if(!mixOk) html+=renderBlock('ECOF + Easy Ship',0,sto3pl,'⚠️ Mix zonas debe sumar 100%',true);
+  else if(!easy) html+=renderBlock('ECOF + Easy Ship',0,sto3pl,'⚠️ Peso facturable >25 kg',true);
+  else html+=renderBlock('ECOF + Easy Ship <span style="color:#888;font-weight:400;font-size:11px">· '+easy.wKg.toFixed(2)+' kg fact.</span>', baseECOF+easy.fee, sto3pl, null, true, easy.fee, baseECOF);
+  // ECOF only: baseECOF sin outbound (no va a FBA)
+  // Mix zonas: same-state 30% × {local 30, metro 50, remote 20}
+  //            near-state (70% × 70%) × {capital 30, metro 50, remote 20}
+  //            distant-state (70% × 30%) × {capital 30, metro 50, remote 20}
+  const zoneMix=[
+    ['SSL',0.30*0.30],['SSM',0.30*0.50],['SSR',0.30*0.20],
+    ['NSC',0.49*0.30],['NSM',0.49*0.50],['NSR',0.49*0.20],
+    ['DSC',0.21*0.30],['DSM',0.21*0.50],['DSR',0.21*0.20]
+  ];
+  const ecofErrPct=+document.getElementById('ecofErr').value/100;
+  const aramexCov=+document.getElementById('aramexCov').value/100;
+  const e=calcECOF(L,A,H,pesoKg,zoneMix,aramexCov,15,0.10,0.25);
+  // +5% error, SIN GST (es deducible, no es coste neto), coste fijo SIN outbound 3PL a FBA
+  const ecofShip = e.fee*(1+ecofErrPct);
+  const baseECOFonly = costProdAUD + envioCNAU + inAUD; // sin outbound
+  // ECOF only: Sto 3PL 1.5%, SIN ads
+  html+=renderBlock('ECOF only <span style="color:#888;font-weight:400;font-size:11px">· '+e.segment+' · '+e.wKg.toFixed(2)+' kg fact.</span>', baseECOFonly+ecofShip, sto3pl, null, false, ecofShip, baseECOFonly);
+  // Direct to FBA: FOB + 2 AUD/kg × peso_fact + 0.5 AUD envío interno China + FBA fulfilment fee
+  // % variables: Sto FBA 2.5% + refund 3% + ads 6% + error 2% + comisión 15%, TODO × (1+gst)
+  const d2fbaShipRate=+document.getElementById('d2fbaShip').value;
+  const d2fbaInternal=+document.getElementById('d2fbaInt').value;
+  const wD2 = Math.max(pesoKg, (L*A*H)/5000);
+  const d2fbaShipCost = d2fbaShipRate * wD2;
+  const costFobAUD = +document.getElementById('costoProd').value * fx;
+  // FBA fee: el mismo que ECOF+FBA
+  const fbaFeeD2 = fba ? fba.fee : 0;
+  const fixedD2 = costFobAUD + d2fbaShipCost + d2fbaInternal + fbaFeeD2;
+  const pctEffD2 = (comision + stoFba + refundPct + adsPct + errPct) * (1+gst);
+  function priceForD2(margen){
+    const denom=1-pctEffD2-margen;
+    if(denom<=0) return null;
+    const pNet=fixedD2/denom;
+    return {pNet,pGst:pNet*(1+gst),beneficio:pNet*margen};
+  }
+  // Direct to FBA shipping = 2 AUD/kg × peso_fact + 0.5 AUD envío interno + FBA fee
+  const d2fbaShipTotal = d2fbaShipCost + d2fbaInternal + fbaFeeD2;
+  const d2fbaBase = costFobAUD;
+  let htmlD2 = `<div class="scen-block${!fba?' disabled':''}">
+    <div class="scen-head"><div class="scen-name">Direct to FBA <span style="color:#888;font-weight:400;font-size:11px">${fba?'· '+fba.tier+' · '+wD2.toFixed(2)+' kg fact.':''}</span></div>
+    <div class="scen-cost">${fba?'<b>A$ '+fixedD2.toFixed(2)+'</b> <span style="color:#888">= '+d2fbaBase.toFixed(2)+' + '+d2fbaShipTotal.toFixed(2)+' envío</span>':''}</div></div>`;
+  if(!fba) htmlD2 += '<div class="error">⚠️ Fuera de tiers FBA</div></div>';
+  else {
+    htmlD2 += '<div class="scen-prices">';
+    for(const m of margenes){
+      const r=priceForD2(m.val);
+      if(!r) htmlD2+=`<div class="pcell ${m.custom?'custom':''}"><div class="pct">${m.label}</div><div class="price">—</div></div>`;
+      else htmlD2+=`<div class="pcell ${m.custom?'custom':''}"><div class="pct">${m.label}</div><div class="price">A$${r.pGst.toFixed(2)}</div><div class="net">${r.pNet.toFixed(2)} neto</div><div class="pft">+${r.beneficio.toFixed(2)}</div></div>`;
+    }
+    if(targetPrice>0){
+      const pNet = targetPrice/(1+gst);
+      const margenReal = 1 - pctEffD2 - fixedD2/pNet;
+      const benef = pNet*margenReal;
+      const bgStyle = margenReal<0 ? ' style="background:#b91c1c"' : '';
+      htmlD2+=`<div class="pcell target"${bgStyle}><div class="pct">Target</div><div class="price">A$${targetPrice.toFixed(2)}</div><div class="net"><b style="color:#fff">${(margenReal*100).toFixed(1)}%</b></div><div class="pft">${benef>=0?'+':''}${benef.toFixed(2)}</div></div>`;
+    } else {
+      htmlD2+=`<div class="pcell target" style="opacity:0.35"><div class="pct">Target</div><div class="price">—</div><div class="net">pon PVP</div></div>`;
+    }
+    htmlD2+='</div></div>';
+  }
+  html+=htmlD2;
+
+  document.getElementById('result').innerHTML=html;
+}
+calc();
+</script>
+</body>
+</html>
